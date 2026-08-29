@@ -122,17 +122,28 @@ export default function Home() {
                 )}
               </div>
               <p className="text-sm whitespace-pre-wrap">{post.content}</p>
-              {post.status !== "PUBLISHED" && (
+              <div className="mt-2 flex gap-3">
+                {post.status !== "PUBLISHED" && (
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/posts/${post.id}/publish`, { method: "POST" });
+                      await fetchPosts();
+                    }}
+                    className="text-xs font-semibold text-[#0A66C2] hover:underline"
+                  >
+                    Publish now
+                  </button>
+                )}
                 <button
                   onClick={async () => {
-                    await fetch(`/api/posts/${post.id}/publish`, { method: "POST" });
+                    await fetch(`/api/posts/${post.id}`, { method: "DELETE" });
                     await fetchPosts();
                   }}
-                  className="mt-2 text-xs font-semibold text-[#0A66C2] hover:underline"
+                  className="text-xs font-semibold text-red-600 hover:underline"
                 >
-                  Publish now
+                  Delete
                 </button>
-              )}
+              </div>
             </div>
           ))}
           {posts.length === 0 && (
