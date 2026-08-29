@@ -23,6 +23,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (session) fetchPosts();
   }, [session]);
 
@@ -106,10 +107,10 @@ export default function Home() {
                     post.status === "PUBLISHED"
                       ? "bg-green-100 text-green-700"
                       : post.status === "SCHEDULED"
-                        ? "bg-blue-100 text-[#0A66C2]"
-                        : post.status === "FAILED"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-600"
+                      ? "bg-blue-100 text-[#0A66C2]"
+                      : post.status === "FAILED"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {post.status}
@@ -121,6 +122,17 @@ export default function Home() {
                 )}
               </div>
               <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+              {post.status !== "PUBLISHED" && (
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/posts/${post.id}/publish`, { method: "POST" });
+                    await fetchPosts();
+                  }}
+                  className="mt-2 text-xs font-semibold text-[#0A66C2] hover:underline"
+                >
+                  Publish now
+                </button>
+              )}
             </div>
           ))}
           {posts.length === 0 && (
