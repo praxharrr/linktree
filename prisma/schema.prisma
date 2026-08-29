@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  createdAt   DateTime @default(now())
+
+  linkedInAccount LinkedInAccount?
+  posts           Post[]
+}
+
+model LinkedInAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  linkedInUrn  String   // LinkedIn's user URN, needed for posting
+  createdAt    DateTime @default(now())
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  content       String     @db.Text
+  status        PostStatus @default(DRAFT)
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  linkedInPostId String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  analytics     PostAnalytics?
+  aiGenerations AIGeneration[]
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model PostAnalytics {
+  id          String   @id @default(cuid())
+  postId      String   @unique
+  post        Post     @relation(fields: [postId], references: [id])
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  impressions Int      @default(0)
+  fetchedAt   DateTime @default(now())
+}
+
+model AIGeneration {
+  id        String   @id @default(cuid())
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id])
+  prompt    String   @db.Text
+  output    String   @db.Text
+  createdAt DateTime @default(now())
+}

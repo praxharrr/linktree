@@ -1,67 +1,133 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+
+type Post = {
+  id: string;
+  content: string;
+  status: string;
+  scheduledAt: string | null;
+  createdAt: string;
+};
 
 export default function Home() {
+  const { data: session } = useSession();
+  const [content, setContent] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchPosts = async () => {
+    const res = await fetch("/api/posts");
+    if (res.ok) setPosts(await res.json());
+  };
+
+  useEffect(() => {
+    if (session) fetchPosts();
+  }, [session]);
+
+  const handleSubmit = async () => {
+    if (!content.trim()) return;
+    setLoading(true);
+    await fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content,
+        scheduledAt: scheduledAt || null,
+      }),
+    });
+    setContent("");
+    setScheduledAt("");
+    await fetchPosts();
+    setLoading(false);
+  };
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F3F2EF]">
+        <button
+          onClick={() => signIn("linkedin")}
+          className="bg-[#0A66C2] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#004182] transition"
+        >
+          Sign in with LinkedIn
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-[#F3F2EF] text-[#1D2226]">
+      <header className="bg-[#0A66C2] text-white px-6 py-4 flex justify-between items-center">
+        <h1 className="font-bold text-lg">Linktree</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-sm">{session.user?.email}</span>
+          <button
+            onClick={() => signOut()}
+            className="text-sm underline hover:no-underline"
+          >
+            Sign out
+          </button>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+      </header>
+
+      <main className="max-w-2xl mx-auto py-8 px-4">
+        <div className="bg-white rounded-lg shadow-sm p-5 mb-6">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="What do you want to talk about?"
+            rows={5}
+            className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-[#0A66C2] resize-none"
+          />
+          <div className="flex items-center justify-between mt-3">
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !content.trim()}
+              className="bg-[#0A66C2] text-white px-5 py-2 rounded-full font-semibold hover:bg-[#004182] disabled:opacity-50 transition"
+            >
+              {scheduledAt ? "Schedule" : "Save draft"}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {posts.map((post) => (
+            <div key={post.id} className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex justify-between items-start mb-2">
+                <span
+                  className={`text-xs font-semibold px-2 py-1 rounded ${
+                    post.status === "PUBLISHED"
+                      ? "bg-green-100 text-green-700"
+                      : post.status === "SCHEDULED"
+                        ? "bg-blue-100 text-[#0A66C2]"
+                        : post.status === "FAILED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {post.status}
+                </span>
+                {post.scheduledAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(post.scheduledAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+            </div>
+          ))}
+          {posts.length === 0 && (
+            <p className="text-center text-gray-500 text-sm py-8">
+              No posts yet — write your first one above.
+            </p>
+          )}
         </div>
       </main>
     </div>
